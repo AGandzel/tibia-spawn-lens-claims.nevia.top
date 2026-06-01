@@ -1,9 +1,8 @@
-# Tibia Claims Info — Chrome Extension
+# tibia-spawn-lens — Chrome Extension
 
-Rozszerzenie do Chrome, które automatycznie pobiera i wyświetla **profesję** oraz **poziom** postaci z gry Tibia obok ich nazw na stronie [claims.nevia.top](https://claims.nevia.top).
+Rozszerzenie do Chrome, które automatycznie pobiera i wyświetla **profesję**, **poziom** oraz **gildię** postaci z gry Tibia obok ich nazw na stronie [claims.nevia.top](https://claims.nevia.top).
 
 ![preview](https://i.imgur.com/UTozWKP.png)
-> *Przykład: `claimed by Heetsen` → `claimed by Heetsen [RP] [509]`*
 
 ---
 
@@ -11,11 +10,13 @@ Rozszerzenie do Chrome, które automatycznie pobiera i wyświetla **profesję** 
 
 - Automatycznie uruchamia się po wejściu na `claims.nevia.top`
 - Pobiera dane postaci z [TibiaData API v4](https://tibiadata.com/)
-- Wyświetla skrót profesji z kolorowym badge'em i poziom postaci
-- Cache — nie odpytuje API wielokrotnie dla tej samej postaci
+- Wyświetla kolorowy badge z profesją, poziomem i opcjonalnie gildią
+- Popup z rozwijanym panelem opcji — możliwość włączenia/wyłączenia każdego elementu osobno
+- Filtrowanie gildii — badge gildii pojawia się tylko dla wybranej przez użytkownika gildii
+- Ustawienia zapisywane między sesjami (`chrome.storage`)
+- Cache — nie odpytuje API wielokrotnie dla tej samej postaci w ramach jednej sesji
 - Obsługuje wszystkie profesje w tym **Monk / Grand Master Monk**
 - Działa z dynamicznie renderowaną stroną (Next.js / React)
-- Popup z przyciskiem do ręcznego uruchomienia jako backup
 
 ---
 
@@ -41,10 +42,10 @@ Rozszerzenie do Chrome, które automatycznie pobiera i wyświetla **profesję** 
 ```
 tibia-claims-ext/
 ├── manifest.json      # Konfiguracja rozszerzenia (Manifest V3)
-├── content.js         # Główny skrypt wstrzykiwany na stronę
-├── popup.html         # UI popupu rozszerzenia
-├── popup.js           # Logika popupu (ręczne uruchomienie)
-├── style.css          # Style dla badge'y (używane przez content.js)
+├── content.js         # Główny skrypt wstrzykiwany automatycznie na stronę
+├── popup.html         # UI popupu z panelem opcji
+├── popup.js           # Logika popupu — opcje, storage, ręczne uruchomienie
+├── style.css          # Style dla badge'y
 └── icon.png           # Ikona rozszerzenia
 ```
 
@@ -73,7 +74,14 @@ claims.nevia.top (Next.js/React)
                 └── Cache miss → odpytuje API → zapisuje do cache
                         │
                         ▼
-                Wstrzykuje badge [VOC] [LVL] obok nazwy postaci
+              Czyta opcje z chrome.storage
+                        │
+                        ▼
+              Buduje badge według włączonych opcji:
+              [VOC] [LVL] [GILDIA · RANK]
+                        │
+                        ▼
+              Wstrzykuje badge obok nazwy postaci
 ```
 
 ---
@@ -84,13 +92,14 @@ claims.nevia.top (Next.js/React)
 |---|---|
 | **Chrome Extensions API — Manifest V3** | Podstawa rozszerzenia, deklaracja uprawnień i content scripts |
 | **Content Scripts** | Automatyczne wstrzykiwanie JS na docelową stronę |
-| **Chrome Scripting API** (`chrome.scripting`) | Ręczne uruchamianie skryptu z poziomu popupu |
+| **Chrome Scripting API** (`chrome.scripting`) | Uruchamianie skryptu z poziomu popupu z przekazaniem opcji |
+| **Chrome Storage API** (`chrome.storage.local`) | Trwałe przechowywanie ustawień użytkownika między sesjami |
 | **MutationObserver API** | Wykrywanie dynamicznych zmian DOM renderowanych przez React |
 | **Fetch API** | Asynchroniczne zapytania do TibiaData API |
 | **TibiaData API v4** | Zewnętrzne REST API dostarczające dane postaci z gry Tibia |
 | **Vanilla JavaScript (ES2020+)** | Cała logika rozszerzenia bez zewnętrznych zależności |
 | **HTML / CSS** | UI popupu i stylowanie badge'y |
-| **Tailwind CSS** (strona docelowa) | Selektory CSS (`span.text-sm`, `span.font-semibold`) dopasowane do klas Tailwind używanych przez claims.nevia.top |
+| **Tailwind CSS** (strona docelowa) | Selektory CSS dopasowane do klas Tailwind używanych przez claims.nevia.top |
 
 ---
 
@@ -106,6 +115,23 @@ claims.nevia.top (Next.js/React)
 
 ---
 
+## Popup — panel opcji
+
+Kliknięcie w ikonkę rozszerzenia otwiera popup z rozwijanym panelem ustawień:
+
+| Opcja | Opis |
+|---|---|
+| ✅ Profesja | Wyświetla skrót profesji z kolorowym tłem |
+| ✅ Poziom | Wyświetla poziom postaci |
+| ✅ Gildia | Wyświetla badge gildii tylko dla postaci z wybranej gildii |
+| Nazwa gildii | Pole tekstowe — wpisz nazwę gildii którą chcesz śledzić (np. `Rebels`) |
+
+Badge gildii ma format `NazwaGildii · Ranga`, np. `Rebels · Veteran`.
+
+Ustawienia są zapamiętywane i stosowane automatycznie przy kolejnych wejściach na stronę.
+
+---
+
 ## Jak działa content.js
 
 Strona `claims.nevia.top` jest zbudowana w **Next.js** i renderuje listę claimów dynamicznie po załadowaniu strony (client-side React). Z tego powodu standardowe `document_idle` nie wystarczy — DOM w momencie uruchomienia skryptu zawiera tylko szkielet strony.
@@ -115,7 +141,7 @@ Rozwiązanie dwutorowe:
 1. **MutationObserver** — nasłuchuje na zmiany w `document.body` i odpala `processAll()` z debounce 800ms gdy React doda nowe elementy do DOM.
 2. **Polling co 2 sekundy przez 30 sekund** — fallback na wypadek gdyby observer przeoczył renderowanie.
 
-`processAll()` szuka elementów pasujących do selektora `span.text-sm span.font-semibold`, sprawdza czy ich rodzic zawiera tekst `"claimed by"`, i dla każdego nowego nicku odpytuje TibiaData API. Wynik jest cachowany w pamięci sesji żeby ograniczyć liczbę zapytań.
+`processAll()` wczytuje aktualne opcje z `chrome.storage`, szuka elementów pasujących do selektora `span.text-sm span.font-semibold`, sprawdza czy ich rodzic zawiera tekst `"claimed by"`, i dla każdego nowego nicku odpytuje TibiaData API. Wynik jest cachowany w pamięci sesji. Na podstawie opcji buduje badge z wybranych elementów i wstrzykuje go obok nazwy postaci.
 
 ---
 
@@ -131,16 +157,8 @@ GET https://api.tibiadata.com/v4/character/{name}
 Używane pola z odpowiedzi:
 - `character.character.level` — poziom postaci
 - `character.character.vocation` — profesja postaci
-
----
-
-## Możliwe rozszerzenia w przyszłości
-
-- Wyświetlanie gildii postaci
-- Kolorowanie całego wiersza claimu zależnie od profesji
-- Tooltip z pełnymi danymi postaci po najechaniu myszką
-- Auto-odświeżanie badge'y co X sekund
-- Obsługa innych stron ze spawnami
+- `character.character.guild.name` — nazwa gildii
+- `character.character.guild.rank` — ranga w gildii
 
 ---
 
