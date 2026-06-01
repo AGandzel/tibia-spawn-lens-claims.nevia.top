@@ -1,0 +1,26 @@
+{
+  "manifest_version": 3,
+  "name": "Tibia Claims Info",
+  "version": "3.0",
+  "description": "Pokazuje poziom i profesję postaci na claims.nevia.top",
+  "permissions": ["activeTab", "scripting"],
+  "host_permissions": [
+    "https://claims.nevia.top/*",
+    "https://api.tibiadata.com/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": ["https://claims.nevia.top/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Tibia Claims Info"
+  },
+  "icons": {
+    "48": "icon.png",
+    "128": "icon.png"
+  }
+}
