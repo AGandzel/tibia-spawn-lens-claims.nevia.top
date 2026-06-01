@@ -2,7 +2,7 @@
 
 Rozszerzenie do Chrome, które automatycznie pobiera i wyświetla **profesję** oraz **poziom** postaci z gry Tibia obok ich nazw na stronie [claims.nevia.top](https://claims.nevia.top).
 
-![preview]([https://i.imgur.com/placeholder.png](https://imgur.com/a/vcpSXjs))
+![preview]([[https://i.imgur.com/placeholder.png](https://imgur.com/a/vcpSXjs)](https://i.imgur.com/UTozWKP.png))
 > *Przykład: `claimed by Heetsen` → `claimed by Heetsen [RP] [509]`*
 
 ---
