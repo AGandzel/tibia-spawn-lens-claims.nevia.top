@@ -3,21 +3,198 @@
 <head>
 <meta charset="utf-8"/>
 <style>
-  body { width: 210px; padding: 12px; font-family: sans-serif; background: #1a1a2e; color: #eee; margin: 0; }
-  button { width: 100%; padding: 9px; color: white; border: none; border-radius: 6px; font-size: 13px; font-weight: bold; cursor: pointer; margin-bottom: 6px; }
-  #btn { background: #c0392b; }
-  #btn:hover { background: #e74c3c; }
-  #auto-btn { background: #2980b9; }
-  #auto-btn:hover { filter: brightness(1.15); }
-  p { font-size: 11px; color: #aaa; margin: 6px 0 0 0; text-align: center; }
-  #status { font-size: 12px; margin-top: 6px; text-align: center; color: #2ecc71; min-height: 16px; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    width: 230px;
+    font-family: 'Segoe UI', sans-serif;
+    background: #1a1a2e;
+    color: #eee;
+  }
+
+  .header {
+    padding: 12px 14px 10px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+  }
+
+  .title {
+    font-size: 13px;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 2px;
+  }
+
+  .subtitle {
+    font-size: 10px;
+    color: #888;
+  }
+
+  /* Główny przycisk — rozwijany */
+  .main-btn {
+    width: 100%;
+    padding: 10px 14px;
+    background: #c0392b;
+    color: white;
+    border: none;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    transition: background 0.15s;
+  }
+  .main-btn:hover { background: #e74c3c; }
+  .main-btn .arrow {
+    font-size: 10px;
+    transition: transform 0.2s;
+  }
+  .main-btn.open .arrow { transform: rotate(180deg); }
+
+  /* Panel opcji */
+  .options-panel {
+    display: none;
+    background: #16213e;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    padding: 10px 14px;
+  }
+  .options-panel.visible { display: block; }
+
+  .option-label {
+    font-size: 10px;
+    color: #aaa;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 8px;
+  }
+
+  .option-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 0;
+    cursor: pointer;
+    user-select: none;
+  }
+  .option-row:hover span { color: #fff; }
+
+  .option-row input[type="checkbox"] {
+    width: 14px;
+    height: 14px;
+    accent-color: #c0392b;
+    cursor: pointer;
+  }
+
+  .option-row span {
+    font-size: 12px;
+    color: #ccc;
+    transition: color 0.1s;
+  }
+
+  .guild-input-row {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(255,255,255,0.06);
+  }
+
+  .guild-input-row label {
+    font-size: 10px;
+    color: #aaa;
+    display: block;
+    margin-bottom: 4px;
+  }
+
+  .guild-input-row input[type="text"] {
+    width: 100%;
+    padding: 5px 8px;
+    background: #0f3460;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 4px;
+    color: #fff;
+    font-size: 11px;
+    outline: none;
+  }
+  .guild-input-row input[type="text"]:focus {
+    border-color: #c0392b;
+  }
+  .guild-input-row input[type="text"]::placeholder { color: #555; }
+
+  .apply-btn {
+    width: 100%;
+    margin-top: 10px;
+    padding: 7px;
+    background: #0f3460;
+    color: #fff;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .apply-btn:hover { background: #1a4a80; }
+
+  .footer {
+    padding: 8px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  #status {
+    font-size: 11px;
+    color: #2ecc71;
+    min-height: 14px;
+  }
+
+  .site-label {
+    font-size: 10px;
+    color: #555;
+  }
 </style>
 </head>
 <body>
-  <button id="btn">⚔️ Pokaż klasy i lvl</button>
-  <button id="auto-btn">▶ Auto (10s)</button>
-  <div id="status"></div>
-  <p>claims.nevia.top</p>
+
+  <div class="header">
+    <div class="title">⚔️ Tibia Claims Info</div>
+    <div class="subtitle">claims.nevia.top</div>
+  </div>
+
+  <button class="main-btn" id="main-btn">
+    <span>Pokaż informacje</span>
+    <span class="arrow">▼</span>
+  </button>
+
+  <div class="options-panel" id="options-panel">
+    <div class="option-label">Co wyświetlać</div>
+
+    <label class="option-row">
+      <input type="checkbox" id="opt-voc" checked>
+      <span>Profesja (EK, RP, MS…)</span>
+    </label>
+
+    <label class="option-row">
+      <input type="checkbox" id="opt-lvl" checked>
+      <span>Poziom</span>
+    </label>
+
+    <label class="option-row">
+      <input type="checkbox" id="opt-guild" checked>
+      <span>Gildia (tylko wybrana)</span>
+    </label>
+
+    <div class="guild-input-row">
+      <label for="guild-name">Nazwa gildii do śledzenia</label>
+      <input type="text" id="guild-name" placeholder="np. Rebels" value="Rebels">
+    </div>
+
+    <button class="apply-btn" id="apply-btn">✓ Zastosuj i odśwież</button>
+  </div>
+
+  <div class="footer">
+    <div id="status"></div>
+    <div class="site-label">v3.0</div>
+  </div>
+
   <script src="popup.js"></script>
 </body>
 </html>
